@@ -136,7 +136,13 @@
 
   .search-panel-head {
     display: flex; justify-content: space-between; align-items: flex-start;
-    margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 10px; gap: 12px; flex-wrap: wrap;
+  }
+  .action-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
   }
   .search-panel h3 { font-size: 18px; }
   .search-panel .desc { max-width: 560px; margin-top: 4px; margin-bottom: 0; }
@@ -345,11 +351,13 @@
   <div class="search-panel">
     <div class="search-panel-head">
       <div>
-        <h3>Sync tenders</h3>
-        <div class="desc">Pulls the latest free feed from GitHub Actions, or fetch live from CPPP directly in your browser.</div>
+        <h3>Find tenders</h3>
+        <div class="desc">Fetch live FM tenders from CPPP, or sync the saved feed from GitHub Actions.</div>
       </div>
-      <button class="primary" id="syncBtn">Sync latest feed</button>
-      <button class="ghost" id="fetchCpppBtn">Fetch from CPPP now</button>
+    </div>
+    <div class="action-row">
+      <button class="primary" id="fetchCpppBtn">Fetch from CPPP now</button>
+      <button class="ghost" id="syncBtn">Sync latest feed</button>
     </div>
     <div class="feed-row">
       <input type="text" class="feed-input" id="feedUrl" placeholder="Feed URL" value="data/tenders-feed.json" />
