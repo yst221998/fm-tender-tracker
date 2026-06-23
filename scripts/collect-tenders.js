@@ -44,8 +44,39 @@ const FM_KEYWORDS = [
   'maintenance of',
 ];
 
-const CPPP_ORGWISE_URL =
-  'https://eprocure.gov.in/eprocure/app?org=&page=FrontEndLatestActiveTendersOrgwise&service=page';
+const LOOSE_FM_KEYWORDS = [
+  'service',
+  'services',
+  'maintenance',
+  'maintain',
+  'facility',
+  'facilities',
+  'housekeeping',
+  'house keeping',
+  'security',
+  'cleaning',
+  'sanitation',
+  'garden',
+  'landscape',
+  'catering',
+  'hospitality',
+  'manpower',
+  'pest',
+  'janitorial',
+  'laundry',
+  'waste',
+  'estate',
+  'property',
+  'soft service',
+  'o&m',
+  'operation',
+  'operations',
+];
+
+const CPPP_URLS = [
+  'https://eprocure.gov.in/eprocure/app?org=&page=FrontEndLatestActiveTendersOrgwise&service=page',
+  'https://eprocure.gov.in/eprocure/app?page=FrontEndLatestActiveTenders&service=page',
+];
 
 const FETCH_OPTS = {
   headers: {
@@ -84,6 +115,11 @@ function matchesFmKeywords(text) {
   return FM_KEYWORDS.some((kw) => hay.includes(kw));
 }
 
+function matchesLooseFmKeywords(text) {
+  const hay = (text || '').toLowerCase();
+  return matchesFmKeywords(hay) || LOOSE_FM_KEYWORDS.some((kw) => hay.includes(kw));
+}
+
 function normalizeDeadline(raw) {
   if (!raw) return '';
   const m = raw.match(/(\d{2})[-/](\w{3})[-/](\d{4})/i);
@@ -109,7 +145,8 @@ async function fetchText(url, opts = {}) {
   return res.text();
 }
 
-function parseCpppOrgwiseHtml(html) {
+function parseCpppOrgwiseHtml(html, options = {}) {
+  const { applyFilter = true } = options;
   const tenders = [];
   const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let match;
@@ -135,7 +172,7 @@ function parseCpppOrgwiseHtml(html) {
       : decodeHtml(stripHtml(titleHtml));
     if (!titleCell || titleCell.length < 8) continue;
     if (/^s\.?\s*no/i.test(titleCell)) continue;
-    if (!matchesFmKeywords(titleCell + ' ' + orgRaw)) continue;
+    if (applyFilter && !matchesLooseFmKeywords(titleCell + ' ' + orgRaw)) continue;
 
     const tidMatch = titleHtml.match(/\[(\d{4}_[A-Z0-9_]+_\d+)\]/i);
     const linkMatch = row.match(/href="([^"]*FrontEndTenderDetails[^"]*)"/i);
@@ -164,21 +201,49 @@ function parseCpppOrgwiseHtml(html) {
   return tenders;
 }
 
+async function fetchCpppHtml(page, baseUrl) {
+  const url = page === 1 ? baseUrl : `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}currentPage=${page}`;
+  return fetchText(url);
+}
+
+function pageHasTenderRows(html) {
+  return /<td[^>]*>[\s\S]*?\[[^\]]{10,}\]/i.test(html);
+}
+
 async function collectCppp() {
   const all = [];
   const maxPages = 5;
+  let baseUrl = CPPP_URLS[0];
+  let firstHtml = null;
+
+  for (const candidate of CPPP_URLS) {
+    try {
+      const html = await fetchCpppHtml(1, candidate);
+      if (pageHasTenderRows(html)) {
+        baseUrl = candidate;
+        firstHtml = html;
+        break;
+      }
+    } catch (err) {
+      console.warn(`CPPP URL failed: ${candidate} — ${err.message}`);
+    }
+  }
+
+  if (!firstHtml) {
+    throw new Error('No CPPP listing URL returned tender rows');
+  }
 
   for (let page = 1; page <= maxPages; page += 1) {
-    const url = page === 1 ? CPPP_ORGWISE_URL : `${CPPP_ORGWISE_URL}&currentPage=${page}`;
     let html;
     try {
-      html = await fetchText(url);
+      html = page === 1 ? firstHtml : await fetchCpppHtml(page, baseUrl);
     } catch (err) {
       if (page === 1) throw err;
       break;
     }
+    if (!pageHasTenderRows(html)) break;
+
     const pageTenders = parseCpppOrgwiseHtml(html);
-    if (!pageTenders.length) break;
     all.push(...pageTenders);
     if (page < maxPages) await new Promise((r) => setTimeout(r, 600));
   }
@@ -222,7 +287,7 @@ async function collectGemForKeyword(keyword) {
     const items = itemsMatch ? decodeHtml(stripHtml(itemsMatch[1])) : '';
     const title = items || bidText;
     if (!title || title.length < 5) continue;
-    if (!matchesFmKeywords(title + ' ' + bidText)) continue;
+    if (!matchesLooseFmKeywords(title + ' ' + bidText)) continue;
 
     const dept = deptMatch ? decodeHtml(stripHtml(deptMatch[1])) : '';
     tenders.push({
@@ -239,7 +304,7 @@ async function collectGemForKeyword(keyword) {
 
   if (tenders.length === 0) {
     const plain = stripHtml(html);
-    const lines = plain.split(/\s{2,}/).filter((l) => l.length > 20 && matchesFmKeywords(l));
+    const lines = plain.split(/\s{2,}/).filter((l) => l.length > 20 && matchesLooseFmKeywords(l));
     for (const line of lines.slice(0, 15)) {
       tenders.push({
         title: line.slice(0, 200).trim(),
@@ -301,7 +366,7 @@ async function collectEprocureHome() {
     const ref = cells[1] || '';
     const closing = cells[2] || '';
     if (!title || title.length < 15) continue;
-    if (!matchesFmKeywords(title)) continue;
+    if (!matchesLooseFmKeywords(title)) continue;
 
     tenders.push({
       title: title.replace(/^\d+\.\s*/, '').trim(),
@@ -361,13 +426,25 @@ async function main() {
   }
 
   const tenders = mergeAndDedupe(collected);
+  const outPath = path.join(__dirname, '..', 'data', 'tenders-feed.json');
+
+  if (tenders.length === 0) {
+    if (fs.existsSync(outPath)) {
+      const existing = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+      const existingCount = Array.isArray(existing.tenders) ? existing.tenders.length : 0;
+      console.warn(`Collected 0 tenders — keeping existing feed (${existingCount} tenders).`);
+    } else {
+      console.warn('Collected 0 tenders — no existing feed to keep.');
+    }
+    process.exit(0);
+  }
+
   const feed = {
     updatedAt: new Date().toISOString(),
     sources,
     tenders,
   };
 
-  const outPath = path.join(__dirname, '..', 'data', 'tenders-feed.json');
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(feed, null, 2) + '\n');
   console.log(`Wrote ${tenders.length} tenders to ${outPath}`);
