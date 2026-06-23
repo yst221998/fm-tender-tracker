@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FM Tender Tracker</title>
+<style>
+  :root {
+    --bg: #faf8f4;
+    --surface: #ffffff;
+    --ink: #1f2a24;
+    --ink-soft: #5b6b62;
+    --ink-faint: #93a098;
+    --line: #e2ded3;
+    --accent: #1d5c4a;
+    --accent-soft: #e1ede8;
+    --gold: #b8863b;
+    --gold-soft: #f6ecd9;
+    --danger: #a3402f;
+    --danger-soft: #f6e6e1;
+    --warn: #b8863b;
+    --warn-soft: #f6ecd9;
+    --ok: #1d5c4a;
+    --ok-soft: #e1ede8;
+    --radius: 10px;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --serif: 'Source Serif Pro', Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header.top .title-block .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  header.top h1 {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header.top .sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+  .top-actions { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+
+  button {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--ink);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 9px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, transform 0.05s;
+    white-space: nowrap;
+  }
+  button:hover { background: var(--ink); color: var(--surface); }
+  button:active { transform: scale(0.98); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: #143f33; border-color: #143f33; }
+  button.ghost { border-color: var(--line); color: var(--ink-soft); }
+  button.ghost:hover { background: var(--ink-soft); color: #fff; border-color: var(--ink-soft); }
+  button.small { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:disabled:hover { background: var(--surface); color: var(--ink); }
+
+  .setup-card, .search-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    margin-bottom: 24px;
+  }
+  .setup-card h3, .search-panel h3 {
+    font-family: var(--serif);
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+  .setup-card p, .search-panel .desc {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+  .setup-row, .query-row, .feed-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  input[type="password"], input[type="text"], select, textarea {
+    font-family: var(--sans);
+    font-size: 13px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 9px 12px;
+    background: var(--surface);
+    color: var(--ink);
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .key-input, .feed-input { flex: 1; min-width: 240px; }
+  .setup-status { font-size: 12px; margin-top: 8px; font-family: var(--mono); }
+  .setup-status.ok { color: var(--ok); }
+  .setup-status.warn { color: var(--ink-soft); }
+
+  .search-panel-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+  }
+  .search-panel h3 { font-size: 18px; }
+  .search-panel .desc { max-width: 560px; margin-top: 4px; margin-bottom: 0; }
+  .query-row input[type="text"] { flex: 1; min-width: 220px; }
+  .preset-chips, .source-links {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .chip, .source-link {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    background: var(--bg);
+    transition: all 0.15s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .chip:hover, .source-link:hover {
+    border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+  }
+  .feed-import {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+  }
+  .feed-import textarea {
+    width: 100%;
+    min-height: 72px;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .search-log {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 44px;
+    white-space: pre-wrap;
+  }
+  .search-log .err { color: var(--danger); }
+  .search-log .ok-line { color: var(--accent); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .stat-card .num { font-family: var(--serif); font-size: 28px; font-weight: 600; }
+  .stat-card .label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-soft); margin-top: 2px;
+  }
+
+  .filter-bar {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .filter-bar input[type="text"] { min-width: 200px; flex: 1; }
+  .filter-bar .count { font-size: 12px; color: var(--ink-faint); font-family: var(--mono); margin-left: auto; }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--bg);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  thead th:hover { color: var(--accent); }
+  thead th .arrow { font-size: 9px; margin-left: 3px; opacity: 0.6; }
+  tbody tr { border-bottom: 1px solid var(--line); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+  tbody td { padding: 12px 14px; vertical-align: top; }
+  td.title-cell { max-width: 320px; }
+  td.title-cell .t-title { font-weight: 500; line-height: 1.4; }
+  td.title-cell a { color: var(--accent); text-decoration: none; }
+  td.title-cell a:hover { text-decoration: underline; }
+  td.title-cell .t-meta { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; font-family: var(--mono); }
+  td.notes-cell textarea {
+    width: 100%; min-height: 44px; resize: vertical; font-size: 12.5px;
+    border: 1px solid transparent; background: transparent; padding: 4px 6px;
+  }
+  td.notes-cell textarea:focus { border-color: var(--line); background: var(--surface); }
+  td.actions-cell { white-space: nowrap; }
+  td.actions-cell button { margin-right: 6px; }
+
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge.new { background: var(--ok-soft); color: var(--ok); }
+  .badge.tracking { background: var(--accent-soft); color: var(--accent); }
+  .badge.applied { background: var(--gold-soft); color: var(--gold); }
+  .badge.won { background: #e1ede8; color: #1d5c4a; font-weight: 600; }
+  .badge.lost { background: var(--danger-soft); color: var(--danger); }
+  .badge.expired { background: var(--bg); color: var(--ink-faint); }
+
+  select.status-select {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 8px;
+    background: var(--surface);
+    cursor: pointer;
+  }
+
+  .deadline-soon { color: var(--danger); font-weight: 600; }
+  .deadline-ok { color: var(--ink); }
+  .deadline-past { color: var(--ink-faint); text-decoration: line-through; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+  .empty-state .ic { font-size: 32px; margin-bottom: 12px; }
+  .empty-state h3 { font-family: var(--serif); font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+  .empty-state p { font-size: 13px; max-width: 420px; margin: 0 auto; }
+
+  .manual-add {
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin-top: 24px;
+  }
+  .manual-add h3 { font-family: var(--serif); font-size: 16px; margin-bottom: 12px; }
+  .manual-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .manual-grid input, .manual-grid select { width: 100%; }
+  .manual-grid .full { grid-column: 1 / -1; }
+
+  footer.bottom {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    margin-top: 40px;
+    font-family: var(--mono);
+  }
+  footer.bottom a { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .table-wrap { overflow-x: auto; }
+    table { min-width: 700px; }
+    header.top { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="title-block">
+      <div class="eyebrow">VAR FMS &middot; Business Development</div>
+      <h1>FM Tender Tracker</h1>
+      <div class="sub">Facility management RFPs &amp; tenders across India — synced, logged, chased.</div>
+    </div>
+    <div class="top-actions">
+      <button class="ghost small" id="exportBtn">Export JSON</button>
+      <button class="ghost small" id="importBtn">Import JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" />
+      <button class="ghost small" id="clearBtn">Clear all</button>
+    </div>
+  </header>
+
+  <div class="search-panel">
+    <div class="search-panel-head">
+      <div>
+        <h3>Sync tenders</h3>
+        <div class="desc">Pulls the latest free feed collected from CPPP/eProcure and GeM by GitHub Actions. No API spend required.</div>
+      </div>
+      <button class="primary" id="syncBtn">Sync latest feed</button>
+    </div>
+    <div class="feed-row">
+      <input type="text" class="feed-input" id="feedUrl" placeholder="Feed URL" value="data/tenders-feed.json" />
+    </div>
+    <div class="search-log" id="searchLog">Ready. Sync the feed or use manual discovery below.</div>
+
+    <div class="feed-import">
+      <p class="desc">Import feed manually (paste JSON array or feed object, or upload a file):</p>
+      <textarea id="feedPaste" placeholder='[{"title":"...","org":"...","url":"..."}] or {"updatedAt":"...","tenders":[...]}'></textarea>
+      <div class="setup-row">
+        <button class="ghost small" id="importFeedBtn">Import pasted feed</button>
+        <button class="ghost small" id="importFeedFileBtn">Upload feed file</button>
+        <input type="file" id="importFeedFile" accept=".json" style="display:none" />
+      </div>
+    </div>
+  </div>
+
+  <div class="search-panel">
+    <div class="search-panel-head">
+      <div>
+        <h3>Manual discovery</h3>
+        <div class="desc">Open targeted searches on public portals when the feed misses something.</div>
+      </div>
+      <button class="ghost" id="openSearchLinksBtn">Open search links</button>
+    </div>
+    <div class="query-row">
+      <input type="text" id="searchQuery" placeholder="e.g. integrated facility management tender airport India 2026" />
+    </div>
+    <div class="preset-chips" id="presetChips"></div>
+    <div class="source-links" id="sourceLinks"></div>
+  </div>
+
+  <div class="setup-card">
+    <h3>Optional: AI cleanup</h3>
+    <p>Low-token Claude pass to filter ambiguous imported tenders. Does not browse the web. Requires an API key at console.anthropic.com.</p>
+    <div class="setup-row">
+      <input type="password" class="key-input" id="apiKey" placeholder="sk-ant-..." />
+      <button class="primary" id="saveKeyBtn">Save key</button>
+      <button class="ghost" id="removeKeyBtn">Remove</button>
+      <button class="ghost" id="aiCleanupBtn">Clean new tenders with AI</button>
+    </div>
+    <div class="setup-status" id="keyStatus"></div>
+  </div>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="filter-bar">
+    <input type="text" id="filterText" placeholder="Filter by keyword, client, location..." />
+    <select id="filterStatus">
+      <option value="">All statuses</option>
+      <option value="new">New</option>
+      <option value="tracking">Tracking</option>
+      <option value="applied">Applied</option>
+      <option value="won">Won</option>
+      <option value="lost">Lost</option>
+      <option value="expired">Expired</option>
+    </select>
+    <div class="count" id="resultCount"></div>
+  </div>
+
+  <div class="table-wrap" id="tableWrap"></div>
+
+  <div class="manual-add">
+    <h3>Add manually</h3>
+    <div class="manual-grid">
+      <input type="text" id="m_title" placeholder="Title" class="full" />
+      <input type="text" id="m_org" placeholder="Issuing organisation" />
+      <input type="text" id="m_location" placeholder="Location" />
+      <input type="text" id="m_deadline" placeholder="Deadline (YYYY-MM-DD)" />
+      <input type="text" id="m_value" placeholder="Estimated value" />
+      <input type="text" id="m_url" placeholder="Source URL" class="full" />
+    </div>
+    <button class="primary small" id="addManualBtn">Add tender</button>
+  </div>
+
+  <footer class="bottom">
+    Data lives only in this browser's local storage. Export regularly to back up.
+  </footer>
+
+</div>
+
+<script>
+const LS_KEY = 'fm_tenders_v1';
+const LS_API_KEY = 'fm_tenders_api_key';
+const LS_FEED_URL = 'fm_tenders_feed_url';
+const LS_AI_CACHE = 'fm_tenders_ai_cache';
+
+let tenders = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+let sortField = 'addedAt';
+let sortDir = 'desc';
+
+const presets = [
+  'integrated facility management tender India 2026',
+  'housekeeping services tender government India',
+  'security services tender PSU India',
+  'facility management RFP airport India',
+  'soft services tender hospital India',
+  'O&M services tender industrial park India',
+  'GeM facility management tender',
+  'facility management tender Bengaluru OR Mumbai OR Delhi'
+];
+
+const portalSources = [
+  { label: 'CPPP active tenders', url: 'https://eprocure.gov.in/eprocure/app?org=&page=FrontEndLatestActiveTendersOrgwise&service=page' },
+  { label: 'GeM all bids', url: 'https://bidplus.gem.gov.in/all-bids' },
+  { label: 'GeM advance search', url: 'https://bidplus.gem.gov.in/advance-search' },
+  { label: 'eProcure home', url: 'https://etenders.gov.in/eprocure/app?page=Home&service=page' }
+];
+
+function save() {
+  localStorage.setItem(LS_KEY, JSON.stringify(tenders));
+  render();
+}
+
+function uid() {
+  return 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function getApiKey() {
+  return localStorage.getItem(LS_API_KEY) || '';
+}
+
+function refreshKeyStatus() {
+  const status = document.getElementById('keyStatus');
+  const key = getApiKey();
+  if (key) {
+    status.textContent = 'Key saved (' + key.slice(0, 8) + '...' + key.slice(-4) + ') — AI cleanup available';
+    status.className = 'setup-status ok';
+    document.getElementById('apiKey').placeholder = 'Key saved — paste a new one to replace';
+  } else {
+    status.textContent = 'No key saved. Sync and manual add work without a key.';
+    status.className = 'setup-status warn';
+  }
+}
+
+document.getElementById('saveKeyBtn').onclick = () => {
+  const val = document.getElementById('apiKey').value.trim();
+  if (!val) return;
+  localStorage.setItem(LS_API_KEY, val);
+  document.getElementById('apiKey').value = '';
+  refreshKeyStatus();
+};
+
+document.getElementById('removeKeyBtn').onclick = () => {
+  localStorage.removeItem(LS_API_KEY);
+  document.getElementById('apiKey').value = '';
+  refreshKeyStatus();
+};
+
+const savedFeedUrl = localStorage.getItem(LS_FEED_URL);
+if (savedFeedUrl) document.getElementById('feedUrl').value = savedFeedUrl;
+document.getElementById('feedUrl').onchange = () => {
+  localStorage.setItem(LS_FEED_URL, document.getElementById('feedUrl').value.trim());
+};
+
+const chipsEl = document.getElementById('presetChips');
+presets.forEach(p => {
+  const chip = document.createElement('div');
+  chip.className = 'chip';
+  chip.textContent = p;
+  chip.onclick = () => { document.getElementById('searchQuery').value = p; };
+  chipsEl.appendChild(chip);
+});
+
+const sourceLinksEl = document.getElementById('sourceLinks');
+portalSources.forEach(s => {
+  const a = document.createElement('a');
+  a.className = 'source-link';
+  a.href = s.url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = s.label;
+  sourceLinksEl.appendChild(a);
+});
+
+const searchLog = document.getElementById('searchLog');
+
+function logMsg(msg, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  searchLog.appendChild(line);
+  searchLog.scrollTop = searchLog.scrollHeight;
+}
+
+function normalizeFeedPayload(data) {
+  if (Array.isArray(data)) return { updatedAt: null, tenders: data };
+  if (data && Array.isArray(data.tenders)) return { updatedAt: data.updatedAt || null, tenders: data.tenders };
+  throw new Error('Feed must be a JSON array or { "tenders": [...] } object');
+}
+
+function importTendersFromList(results, meta) {
+  const existingUrls = new Set(tenders.map(t => t.url).filter(Boolean));
+  const existingTitleSet = new Set(tenders.map(t => (t.title || '').toLowerCase().trim()));
+  let added = 0, skipped = 0, invalid = 0;
+
+  results.forEach(r => {
+    if (!r || typeof r !== 'object') { invalid++; return; }
+    const title = (r.title || '').trim();
+    if (!title) { invalid++; return; }
+    const url = (r.url || '').trim();
+    const titleKey = title.toLowerCase();
+    if ((url && existingUrls.has(url)) || existingTitleSet.has(titleKey)) {
+      skipped++;
+      return;
+    }
+    tenders.push({
+      id: uid(),
+      title,
+      org: r.org || '',
+      location: r.location || '',
+      deadline: r.deadline || '',
+      value: r.value || '',
+      description: r.description || '',
+      url,
+      status: 'new',
+      notes: '',
+      addedAt: Date.now()
+    });
+    if (url) existingUrls.add(url);
+    existingTitleSet.add(titleKey);
+    added++;
+  });
+
+  if (added) save();
+  else render();
+
+  let summary = 'Added ' + added + ' new tender(s)';
+  if (skipped) summary += ', skipped ' + skipped + ' duplicate(s)';
+  if (invalid) summary += ', ' + invalid + ' invalid';
+  if (meta && meta.updatedAt) summary += '. Feed updated ' + new Date(meta.updatedAt).toLocaleString();
+  return summary;
+}
+
+async function syncFeed() {
+  const feedUrl = document.getElementById('feedUrl').value.trim() || 'data/tenders-feed.json';
+  localStorage.setItem(LS_FEED_URL, feedUrl);
+  const syncBtn = document.getElementById('syncBtn');
+  syncBtn.disabled = true;
+  searchLog.innerHTML = '';
+  logMsg('Fetching feed: ' + feedUrl + '...');
+
+  try {
+    const res = await fetch(feedUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const feed = normalizeFeedPayload(data);
+    const summary = importTendersFromList(feed.tenders, feed);
+    logMsg(summary + '.', 'ok-line');
+  } catch (err) {
+    logMsg('Sync failed: ' + err.message + '. If opening locally (file://), use Import feed instead.', 'err');
+  }
+
+  syncBtn.disabled = false;
+}
+
+document.getElementById('syncBtn').onclick = syncFeed;
+
+function importFeedFromText(text) {
+  searchLog.innerHTML = '';
+  try {
+    const data = JSON.parse(text);
+    const feed = normalizeFeedPayload(data);
+    const summary = importTendersFromList(feed.tenders, feed);
+    logMsg(summary + '.', 'ok-line');
+  } catch (err) {
+    logMsg('Import failed: ' + err.message, 'err');
+  }
+}
+
+document.getElementById('importFeedBtn').onclick = () => {
+  const text = document.getElementById('feedPaste').value.trim();
+  if (!text) { searchLog.innerHTML = ''; logMsg('Paste feed JSON first.', 'err'); return; }
+  importFeedFromText(text);
+};
+
+document.getElementById('importFeedFileBtn').onclick = () => document.getElementById('importFeedFile').click();
+document.getElementById('importFeedFile').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => importFeedFromText(reader.result);
+  reader.readAsText(file);
+  e.target.value = '';
+};
+
+function buildSearchUrls(query) {
+  const q = encodeURIComponent(query);
+  return [
+    'https://www.google.com/search?q=' + encodeURIComponent('site:eprocure.gov.in ' + query),
+    'https://www.google.com/search?q=' + encodeURIComponent('site:bidplus.gem.gov.in ' + query),
+    'https://www.google.com/search?q=' + encodeURIComponent('site:etenders.gov.in ' + query),
+    'https://bidplus.gem.gov.in/advance-search'
+  ];
+}
+
+document.getElementById('openSearchLinksBtn').onclick = () => {
+  const query = document.getElementById('searchQuery').value.trim();
+  if (!query) { alert('Enter a search query or click a preset chip.'); return; }
+  buildSearchUrls(query).forEach(url => window.open(url, '_blank', 'noopener'));
+};
+
+document.getElementById('aiCleanupBtn').onclick = async () => {
+  const apiKey = getApiKey();
+  if (!apiKey) { alert('Save a Claude API key first.'); return; }
+
+  const candidates = tenders.filter(t => t.status === 'new').slice(0, 20);
+  if (!candidates.length) { alert('No new tenders to clean up.'); return; }
+
+  const cache = JSON.parse(localStorage.getItem(LS_AI_CACHE) || '{}');
+  const uncached = candidates.filter(t => !cache[t.url || t.title]);
+  if (!uncached.length) { alert('Recent new tenders already AI-checked.'); return; }
+
+  document.getElementById('aiCleanupBtn').disabled = true;
+  searchLog.innerHTML = '';
+  logMsg('Running low-token AI cleanup on ' + uncached.length + ' tender(s)...');
+
+  const snippets = uncached.map((t, i) => ({
+    id: i,
+    title: t.title,
+    org: t.org,
+    description: t.description,
+    url: t.url
+  }));
+
+  const systemPrompt = `You classify India FM/IFM/housekeeping/security/O&M/soft-services tenders. Given candidate snippets, return ONLY a JSON array of ids to KEEP (relevant live FM tenders). Do not browse the web. Example: [0,2,5]`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-latest',
+        max_tokens: 800,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: JSON.stringify(snippets) }]
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      logMsg('AI cleanup error (' + response.status + '): ' + errText.slice(0, 200), 'err');
+      document.getElementById('aiCleanupBtn').disabled = false;
+      return;
+    }
+
+    const data = await response.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    let keepIds;
+    try {
+      keepIds = JSON.parse(text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, ''));
+    } catch {
+      const match = text.match(/\[[\d,\s]+\]/);
+      keepIds = match ? JSON.parse(match[0]) : uncached.map((_, i) => i);
+    }
+
+    const keepSet = new Set(keepIds);
+    let removed = 0;
+    uncached.forEach((t, i) => {
+      cache[t.url || t.title] = Date.now();
+      if (!keepSet.has(i)) {
+        tenders = tenders.filter(x => x.id !== t.id);
+        removed++;
+      }
+    });
+    localStorage.setItem(LS_AI_CACHE, JSON.stringify(cache));
+    save();
+    logMsg('AI cleanup done. Removed ' + removed + ' irrelevant tender(s).', 'ok-line');
+  } catch (err) {
+    logMsg('AI cleanup failed: ' + err.message, 'err');
+  }
+
+  document.getElementById('aiCleanupBtn').disabled = false;
+};
+
+function daysUntil(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((d - now) / (1000 * 60 * 60 * 24));
+}
+
+function renderStats() {
+  const total = tenders.length;
+  const tracking = tenders.filter(t => t.status === 'tracking').length;
+  const applied = tenders.filter(t => t.status === 'applied').length;
+  const won = tenders.filter(t => t.status === 'won').length;
+  const closingSoon = tenders.filter(t => {
+    const d = daysUntil(t.deadline);
+    return d !== null && d >= 0 && d <= 7 && t.status !== 'lost' && t.status !== 'expired';
+  }).length;
+
+  const stats = [
+    { num: total, label: 'Total tracked' },
+    { num: closingSoon, label: 'Closing in 7 days' },
+    { num: tracking, label: 'Tracking' },
+    { num: applied, label: 'Applied' },
+    { num: won, label: 'Won' }
+  ];
+
+  const row = document.getElementById('statsRow');
+  row.innerHTML = '';
+  stats.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.innerHTML = '<div class="num">' + s.num + '</div><div class="label">' + s.label + '</div>';
+    row.appendChild(card);
+  });
+}
+
+const columns = [
+  { key: 'title', label: 'Tender' },
+  { key: 'org', label: 'Organisation' },
+  { key: 'location', label: 'Location' },
+  { key: 'deadline', label: 'Deadline' },
+  { key: 'value', label: 'Value' },
+  { key: 'status', label: 'Status' },
+  { key: 'notes', label: 'Notes' },
+  { key: 'actions', label: '' }
+];
+
+function sortIcon(key) {
+  if (key !== sortField) return '';
+  return sortDir === 'asc' ? '&#9650;' : '&#9660;';
+}
+
+function applyFilters(list) {
+  const text = document.getElementById('filterText').value.toLowerCase().trim();
+  const status = document.getElementById('filterStatus').value;
+  return list.filter(t => {
+    if (status && t.status !== status) return false;
+    if (text) {
+      const hay = [t.title, t.org, t.location, t.description, t.notes].join(' ').toLowerCase();
+      if (!hay.includes(text)) return false;
+    }
+    return true;
+  });
+}
+
+function applySort(list) {
+  const arr = [...list];
+  arr.sort((a, b) => {
+    let av = a[sortField], bv = b[sortField];
+    if (sortField === 'deadline') {
+      const ad = new Date(av), bd = new Date(bv);
+      av = isNaN(ad.getTime()) ? Infinity : ad.getTime();
+      bv = isNaN(bd.getTime()) ? Infinity : bd.getTime();
+    } else if (sortField === 'addedAt') {
+      av = av || 0; bv = bv || 0;
+    } else {
+      av = (av || '').toString().toLowerCase();
+      bv = (bv || '').toString().toLowerCase();
+    }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return arr;
+}
+
+function deadlineClass(t) {
+  const d = daysUntil(t.deadline);
+  if (d === null) return '';
+  if (d < 0) return 'deadline-past';
+  if (d <= 7) return 'deadline-soon';
+  return 'deadline-ok';
+}
+
+function renderTable() {
+  const wrap = document.getElementById('tableWrap');
+  let list = applyFilters(tenders);
+  document.getElementById('resultCount').textContent = list.length + ' of ' + tenders.length + ' shown';
+  list = applySort(list);
+
+  if (tenders.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="ic">&#128269;</div><h3>No tenders tracked yet</h3><p>Sync the feed above, import a feed file, or add a tender manually below.</p></div>';
+    return;
+  }
+
+  if (list.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="ic">&#128270;</div><h3>No matches</h3><p>Try clearing your filters.</p></div>';
+    return;
+  }
+
+  let html = '<table><thead><tr>';
+  columns.forEach(c => {
+    if (c.key === 'actions' || c.key === 'notes') {
+      html += '<th>' + c.label + '</th>';
+    } else {
+      html += '<th data-sort="' + c.key + '">' + c.label + ' <span class="arrow">' + sortIcon(c.key) + '</span></th>';
+    }
+  });
+  html += '</tr></thead><tbody>';
+
+  list.forEach(t => {
+    const url = t.url ? '<a href="' + escAttr(t.url) + '" target="_blank" rel="noopener">' + escHtml(t.title) + '</a>' : escHtml(t.title);
+    const desc = t.description ? '<div class="t-meta">' + escHtml(t.description) + '</div>' : '';
+    const dCls = deadlineClass(t);
+    html += '<tr data-id="' + t.id + '"><td class="title-cell"><div class="t-title">' + url + '</div>' + desc + '</td><td>' + escHtml(t.org) + '</td><td>' + escHtml(t.location) + '</td><td class="' + dCls + '">' + escHtml(t.deadline) + '</td><td>' + escHtml(t.value) + '</td><td>' + statusSelect(t) + '</td><td class="notes-cell"><textarea data-id="' + t.id + '" placeholder="Notes...">' + escHtml(t.notes) + '</textarea></td><td class="actions-cell"><button class="small ghost" data-del="' + t.id + '">Remove</button></td></tr>';
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('th[data-sort]').forEach(th => {
+    th.onclick = () => {
+      const key = th.dataset.sort;
+      if (sortField === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortField = key; sortDir = 'asc'; }
+      renderTable();
+    };
+  });
+  wrap.querySelectorAll('select.status-select').forEach(sel => {
+    sel.onchange = () => {
+      const t = tenders.find(x => x.id === sel.dataset.id);
+      if (t) { t.status = sel.value; save(); }
+    };
+  });
+  wrap.querySelectorAll('textarea[data-id]').forEach(ta => {
+    ta.onblur = () => {
+      const t = tenders.find(x => x.id === ta.dataset.id);
+      if (t) { t.notes = ta.value; saveQuiet(); }
+    };
+  });
+  wrap.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.onclick = () => {
+      if (!confirm('Remove this tender from your tracker?')) return;
+      tenders = tenders.filter(x => x.id !== btn.dataset.del);
+      save();
+    };
+  });
+}
+
+function statusSelect(t) {
+  const opts = ['new', 'tracking', 'applied', 'won', 'lost', 'expired'];
+  let html = '<select class="status-select badge ' + t.status + '" data-id="' + t.id + '">';
+  opts.forEach(o => {
+    html += '<option value="' + o + '"' + (o === t.status ? ' selected' : '') + '>' + o + '</option>';
+  });
+  html += '</select>';
+  return html;
+}
+
+function saveQuiet() {
+  localStorage.setItem(LS_KEY, JSON.stringify(tenders));
+}
+
+function escHtml(str) {
+  if (str === undefined || str === null) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function escAttr(str) {
+  return escHtml(str);
+}
+
+function render() {
+  renderStats();
+  renderTable();
+}
+
+document.getElementById('filterText').oninput = renderTable;
+document.getElementById('filterStatus').onchange = renderTable;
+
+document.getElementById('addManualBtn').onclick = () => {
+  const title = document.getElementById('m_title').value.trim();
+  if (!title) { alert('Title is required.'); return; }
+  tenders.push({
+    id: uid(),
+    title,
+    org: document.getElementById('m_org').value.trim(),
+    location: document.getElementById('m_location').value.trim(),
+    deadline: document.getElementById('m_deadline').value.trim(),
+    value: document.getElementById('m_value').value.trim(),
+    description: '',
+    url: document.getElementById('m_url').value.trim(),
+    status: 'new',
+    notes: '',
+    addedAt: Date.now()
+  });
+  ['m_title', 'm_org', 'm_location', 'm_deadline', 'm_value', 'm_url'].forEach(id => document.getElementById(id).value = '');
+  save();
+};
+
+document.getElementById('exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(tenders, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fm_tenders_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+};
+
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = JSON.parse(reader.result);
+      if (!Array.isArray(imported)) throw new Error('not an array');
+      const existingIds = new Set(tenders.map(t => t.id));
+      let added = 0;
+      imported.forEach(t => {
+        if (!t.id || existingIds.has(t.id)) t.id = uid();
+        tenders.push(t);
+        added++;
+      });
+      save();
+      alert('Imported ' + added + ' tender(s).');
+    } catch (err) {
+      alert('Could not import file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+};
+
+document.getElementById('clearBtn').onclick = () => {
+  if (!confirm('Delete all tracked tenders? This cannot be undone (export first if you want a backup).')) return;
+  tenders = [];
+  save();
+};
+
+refreshKeyStatus();
+render();
+</script>
+</body>
+</html>

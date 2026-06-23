@@ -1,0 +1,26 @@
+FM Tender Tracker — setup
+============================
+
+1. Push this folder to GitHub:
+   - Create a new repo on github.com (e.g. fm-tender-tracker)
+   - Push all files from C:\Users\Yashraj\Projects\fm-tender-tracker
+
+2. Enable GitHub Pages:
+   - Repo Settings → Pages → Build and deployment → Source: GitHub Actions
+
+3. First workflow run:
+   - Actions tab → "Collect tenders" → Run workflow
+   - Or push to main; the workflow collects tenders twice daily (04:00 & 16:00 UTC)
+
+4. Open the tracker:
+   - https://YOUR_USERNAME.github.io/fm-tender-tracker/
+   - Click "Sync latest feed" to import new tenders
+
+5. Local use (without Pages):
+   - Open index.html in a browser
+   - Use "Upload feed file" with data/tenders-feed.json
+   - Or run: node scripts/collect-tenders.js (requires Node.js 20+)
+
+Prerequisites for local git/node (optional):
+   - Git: https://git-scm.com/download/win
+   - Node.js 20+: https://nodejs.org/

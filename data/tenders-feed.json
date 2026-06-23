@@ -1,0 +1,42 @@
+﻿{
+  "updatedAt": "2026-06-23T11:43:15.755Z",
+  "sources": ["cppp"],
+  "tenders": [
+    {
+      "title": "Hospitality Services",
+      "org": "National Institute of Technology Karnataka",
+      "location": "",
+      "deadline": "2026-07-07",
+      "value": "",
+      "description": "CPPP · 2026_NITK_914469_1",
+      "url": "https://eprocure.gov.in/eprocure/app?page=FrontEndTenderDetails&service=page&tid=2026_NITK_914469_1"
+    },
+    {
+      "title": "Supply Installation Testing Commissioning Operation and Maintenance of Centralized Control and Monitoring System CCMS for Highway Lighting on National Highways on Five 05 Year Contract Basis under RnB NH Circle Ananthapuramu in Andhra Pradesh",
+      "org": "Ministry of Road Transport and Highways · P7 Delh - MoRTH · RO Vijayawada - MoRTH · NH Division-Vijayawada - MoRTH",
+      "location": "",
+      "deadline": "2026-07-13",
+      "value": "",
+      "description": "CPPP · 2026_MoRTH_914418_1",
+      "url": "https://eprocure.gov.in/eprocure/app?page=FrontEndTenderDetails&service=page&tid=2026_MoRTH_914418_1"
+    },
+    {
+      "title": "Annual maintenance of Garden at Nuabazar Pump House and Gate No.04 for a period of one year (2026-27).",
+      "org": "Ministry of Shipping · Paradip Port Trust · Engineering Department,PPT · Building Construction Division,Engg Dept.,PPT",
+      "location": "",
+      "deadline": "2026-07-14",
+      "value": "",
+      "description": "CPPP · 2026_MoS_914411_1",
+      "url": "https://eprocure.gov.in/eprocure/app?page=FrontEndTenderDetails&service=page&tid=2026_MoS_914411_1"
+    },
+    {
+      "title": "Design, Development, Hosting, Security Audits, Compliance, and Maintenance of CMS based Website and Web Applications for SPM-NIWAS, Kolkata",
+      "org": "Dr. Syama Prasad Mookerjee - National Institute of Water and Sanitation (SPM-NIWAS) · Procurememnt Cell",
+      "location": "",
+      "deadline": "2026-07-31",
+      "value": "",
+      "description": "CPPP · 2026_NIWAS_914436_1",
+      "url": "https://eprocure.gov.in/eprocure/app?page=FrontEndTenderDetails&service=page&tid=2026_NIWAS_914436_1"
+    }
+  ]
+}
